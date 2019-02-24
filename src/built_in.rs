@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use lisp::{Type, Context, Eval};
 use std::rc::Rc;
-use lisp::Applyable;
+use lisp::Function;
 
 fn add(mut context: &mut Context, args:&[Type]) -> Type {
     Type::Number(args.into_iter().map(|x| {
@@ -32,7 +32,10 @@ fn mult(mut context: &mut Context, args:&[Type]) -> Type {
     }).fold(1, |acc, x| acc * x))
 }
 
-fn def(mut context: &mut Context, args:&[Type]) -> Type {
+/**
+(def a (+ 1 2 ))
+*/
+fn def_special(mut context: &mut Context, args:&[Type]) -> Type {
     let name = if let Type::Symbol(s) = args.get(0).unwrap() {
         s
     } else { panic!()};
@@ -81,7 +84,7 @@ fn fn_special(mut _context: &mut Context, args:& [Type]) -> Type {
     } else { panic!() };
     let body = args.get(2).unwrap().clone();
 
-    let closure: Rc<Applyable> = Rc::new(move |context: &mut Context, args:&[Type]| {
+    let closure: Rc<Function> = Rc::new(move |context: &mut Context, args:&[Type]| {
         let mut context = context.clone();
         assert_eq!(args.len(), argument_bindings.len());
         for i in 0..args.len() {
@@ -112,7 +115,11 @@ fn if_special(mut context: &mut Context, args:& [Type]) -> Type {
     } else { panic!() }
 }
 
-fn greater(mut context: &mut Context, args:& [Type]) -> Type {
+/**
+(> 10 20)
+-> false
+*/
+fn gt(mut context: &mut Context, args:& [Type]) -> Type {
     let left = args.get(0).unwrap().eval(&mut context);
     let right = args.get(1).unwrap().eval(&mut context);
 
@@ -123,7 +130,7 @@ fn greater(mut context: &mut Context, args:& [Type]) -> Type {
     }
 }
 
-fn add_to_context(name: &str, context: &mut Context, value: Rc<Applyable>) {
+fn add_to_context(name: &str, context: &mut Context, value: Rc<Function>) {
     let name = String::from(name);
     context.insert(name.clone(), Type::Function(name, value));
 }
@@ -133,10 +140,10 @@ pub fn init_context() -> Context {
     add_to_context("*", &mut context,Rc::new(mult));
     add_to_context("+", &mut context,Rc::new(add));
     add_to_context("-", &mut context,Rc::new(sub));
-    add_to_context("def", &mut context,Rc::new(def));
+    add_to_context("def", &mut context,Rc::new(def_special));
     add_to_context("let", &mut context,Rc::new(let_special));
     add_to_context("fn", &mut context,Rc::new(fn_special));
     add_to_context("if", &mut context,Rc::new(if_special));
-    add_to_context(">", &mut context,Rc::new(greater));
+    add_to_context(">", &mut context,Rc::new(gt));
     return context;
 }

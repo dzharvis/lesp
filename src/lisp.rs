@@ -4,12 +4,12 @@ use std::fmt::Error;
 use std::fmt;
 use std::rc::Rc;
 
-pub type Applyable = Fn(&mut Context, &[Type]) -> Type;
+pub type Function = Fn(&mut Context, &[Type]) -> Type;
 pub type Context = HashMap<String, Type>;
 
 #[derive(Clone)]
 pub enum Type {
-    Symbol(String), Bool(bool), Number(u32), List(Vec<Type>), Function(String, Rc<Applyable>)
+    Symbol(String), Bool(bool), Number(u32), List(Vec<Type>), Function(String, Rc<Function>)
 }
 
 impl fmt::Debug for Type {

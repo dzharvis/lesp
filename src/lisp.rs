@@ -19,7 +19,7 @@ impl fmt::Debug for Type {
             Type::List(elems) => elems.fmt(f),
             Type::Number(n) => n.fmt(f),
             Type::Symbol(s) => s.fmt(f),
-            _ => write!(f, "Unknown")
+            Type::Bool(b) => b.fmt(f)
         }
 
     }
@@ -43,8 +43,7 @@ impl Eval for Type {
             Type::Number(_n) => self.clone(), // evaluates to itself
             Type::Bool(_b) => self.clone(), // evaluates to itself
             Type::Symbol(name) => {
-                let option = context.get(name);
-                option.unwrap().clone()
+                context.get(name).unwrap().clone()
             },
             Type::Function(_name, _f) => unimplemented!()
         }

@@ -3,22 +3,29 @@ extern crate regex;
 extern crate core;
 
 mod lexer;
-mod ast;
+mod lisp;
+mod builder;
 mod built_in;
 
+use lisp::Eval;
+
 fn main() {
-    let input = String::from("(* (* 1 2 (+ 3 4 (+ 0 0))) 1 )");
+    let input = String::from("(let ((add (fn add (aa bb) (+ aa bb)))\
+                                              (a 1)\
+                                              (b (+ 10 20))) \
+                                          (* 0 0) \
+                                          (add a a))");
     println!("input -> {}", input);
 
     let res = lexer::parse_fsm(&input);
     println!("lexer -> {:?}", res);
 
-    let (n, _) = ast::consume(&res, 0);
+    let (n, _) = builder::build(&res, 0);
     println!("tree -> {:?}", n);
 
-    let context = built_in::init_context();
-    let result = n.eval(&context);
-    if let ast::Type::Number(n) = result {
+    let mut context = built_in::init_context();
+    let result = n.eval(&mut context);
+    if let lisp::Type::Number(n) = result {
         println!("result -> {:?}", n);
     } else {
         println!("error ");

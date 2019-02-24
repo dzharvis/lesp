@@ -57,8 +57,7 @@ fn let_special(mut context: &mut Context, args:&[Type]) -> Type {
 (fn name (a b c)
     (+ a b c))
 */
-
-fn fn_special(mut context: &mut Context, args:& [Type]) -> Type {
+fn fn_special(mut _context: &mut Context, args:& [Type]) -> Type {
     let name = if let Type::Symbol(name) = args.get(0).unwrap() {
         name
     } else { panic!()};
@@ -81,17 +80,34 @@ fn fn_special(mut context: &mut Context, args:& [Type]) -> Type {
     Type::Function(name.clone(), closure)
 }
 
+/**
+(if form
+    then
+    else)
+*/
+fn if_special(mut context: &mut Context, args:& [Type]) -> Type {
+    let test = args.get(0).unwrap().eval(&mut context);
+    if let Type::Bool(t) = test {
+        if t {
+            args.get(1).unwrap().eval(&mut context)
+        } else {
+            args.get(2).unwrap().eval(&mut context)
+        }
+    } else { panic!() }
+}
+
+fn add_to_context(name: &str, context: &mut Context, value: Rc<Applyable>) {
+    let name = String::from(name);
+    context.insert(name.clone(), Type::Function(name, value));
+}
+
 pub fn init_context() -> Context {
-    let mut hm: HashMap<String, Type> = HashMap::new();
-    let mult_str = String::from("*");
-    hm.insert(mult_str.clone(), Type::Function(mult_str, Rc::new(mult)));
-    let add_str = String::from("+");
-    hm.insert(add_str.clone(), Type::Function(add_str, Rc::new(add)));
-    let def_str = String::from("def");
-    hm.insert(def_str.clone(), Type::Function(def_str, Rc::new(def)));
-    let let_str = String::from("let");
-    hm.insert(let_str.clone(), Type::Function(let_str, Rc::new(let_special)));
-    let fn_str = String::from("fn");
-    hm.insert(fn_str.clone(), Type::Function(fn_str, Rc::new(fn_special)));
-    return hm;
+    let mut context: HashMap<String, Type> = HashMap::new();
+    add_to_context("*", &mut context,Rc::new(mult));
+    add_to_context("+", &mut context,Rc::new(add));
+    add_to_context("def", &mut context,Rc::new(def));
+    add_to_context("let", &mut context,Rc::new(let_special));
+    add_to_context("fn", &mut context,Rc::new(fn_special));
+    add_to_context("if", &mut context,Rc::new(if_special));
+    return context;
 }

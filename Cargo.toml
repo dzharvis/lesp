@@ -4,5 +4,4 @@ version = "0.1.0"
 authors = ["dzharvis"]
 
 [dependencies]
-regex = "1"
-lazy_static = "1.0.1"
+regex = "1.1.0"

@@ -74,8 +74,7 @@ fn let_special(context: &mut Context, args:&[Type]) -> Type {
 (fn name (a b c)
     (+ a b c))
 */
-fn fn_special(mut _context: &mut Context, args:& [Type]) -> Type {
-
+fn fn_special(context: &mut Context, args:& [Type]) -> Type {
     let name = if let Type::Symbol(name) = args.get(0).unwrap() {
         name
     } else { panic!()};
@@ -83,18 +82,31 @@ fn fn_special(mut _context: &mut Context, args:& [Type]) -> Type {
         names.clone()
     } else { panic!() };
     let body = args.get(2).unwrap().clone();
+    let captured_context = context.clone(); // clone because of lifetime inside closure
+    let closure_name = name.clone();
 
-    let closure: Rc<Function> = Rc::new(move |context: &mut Context, args:&[Type]| {
-        let mut context = context.clone();
+    let closure: Rc<Function> = Rc::new(move |mut lexical_context: &mut Context, args:&[Type]| {
+        let mut captured_context = captured_context.clone(); // rust forces either mutex or clone for thread safety
         assert_eq!(args.len(), argument_bindings.len());
         for i in 0..args.len() {
             let name = if let Type::Symbol(name) = argument_bindings.get(i).unwrap() {
                 name
             } else { panic!() };
-            let x = args.get(i).unwrap().eval(&mut context);
-            context.insert(name.clone(), x);
+            let arg = args.get(i).unwrap().eval(&mut lexical_context); //eval function args first with current lexical scope
+            captured_context.insert(name.clone(), arg);
         }
-        return body.eval(&mut context);
+
+        // TODO find better solution for this hack
+        // hack for named lambdas - get current closure from lexical scope if exists
+        match lexical_context.get(&closure_name) {
+            Some(c) => {
+                // force add current closure to captured scope
+                captured_context.insert(closure_name.clone(), c.clone());
+                ()
+            },
+            None => () //ignore
+        };
+        return body.eval(&mut captured_context); // eval body with enclosed scope
     });
     Type::Function(name.clone(), closure)
 }

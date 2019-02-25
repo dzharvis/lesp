@@ -161,9 +161,39 @@ mod tests {
 
     #[test]
     fn test_list() {
+        assert_eq!(eval(&String::from("(list)")),
+                   Type::List(vec![]));
         assert_eq!(eval(&String::from("(list 1 2 3)")),
                    Type::List(vec![Type::Number(1), Type::Number(2), Type::Number(3)]));
         assert_eq!(eval(&String::from("(list 1 (+ 1 2))")),
                    Type::List(vec![Type::Number(1), Type::Number(3)]));
+    }
+
+    #[test]
+    fn test_car() {
+        assert_eq!(eval(&String::from("(car (list))")),
+                   Type::List(vec![]));
+        assert_eq!(eval(&String::from("(car)")),
+                   Type::List(vec![]));
+        assert_eq!(eval(&String::from("(car (list (+ 0 0 0 0 1) 2 3))")),
+                   Type::Number(1));
+    }
+
+    #[test]
+    fn test_cdr() {
+        assert_eq!(eval(&String::from("(cdr (list 1 (+ 0 2) (+ 1 2)))")),
+                   Type::List(vec![Type::Number(2), Type::Number(3)]));
+        assert_eq!(eval(&String::from("(cdr (list))")),
+                   Type::List(vec![]));
+        assert_eq!(eval(&String::from("(cdr)")),
+                   Type::List(vec![]));
+    }
+
+    #[test]
+    fn test_cons() {
+        assert_eq!(eval(&String::from("(cons 0 (list 1 (+ 0 2) (+ 1 2)))")),
+                   Type::List(vec![Type::Number(0), Type::Number(1), Type::Number(2), Type::Number(3)]));
+        assert_eq!(eval(&String::from("(cons 0 (list 1 (+ 0 2) (+ 1 2)))")),
+                   Type::List(vec![Type::Number(0), Type::Number(1), Type::Number(2), Type::Number(3)]));
     }
 }

@@ -32,6 +32,39 @@ fn mult(mut context: &mut Context, args:&[Type]) -> Type {
     }).fold(1, |acc, x| acc * x))
 }
 
+fn car(mut context: &mut Context, args:&[Type]) -> Type {
+    if args.len() == 0 {
+        return Type::List(vec![]);
+    }
+    if let Type::List(elems) = args.get(0).unwrap().eval(&mut context) {
+        if elems.len() == 0 {
+            return Type::List(vec![]);
+        }
+        elems.get(0).unwrap().clone()
+    } else { panic!() }
+}
+
+fn cdr(mut context: &mut Context, args:&[Type]) -> Type {
+    if args.len() == 0 {
+        return Type::List(vec![]);
+    }
+    if let Type::List(elems) = args.get(0).unwrap().eval(&mut context) {
+        if elems.len() == 0 {
+            return Type::List(vec![]);
+        }
+        Type::List(elems[1..].to_vec())
+    } else { panic!() }
+}
+
+fn cons(mut context: &mut Context, args:&[Type]) -> Type {
+    let first = args.get(0).unwrap().eval(&mut context);
+    if let Type::List(elems) = args.get(1).unwrap().eval(&mut context) {
+        let mut new_list = vec![first];
+        new_list.extend(elems);
+        Type::List(new_list)
+    } else { panic!() }
+}
+
 /**
  * (quote (a 2 3))
  * -> (a 2 3)
@@ -180,5 +213,8 @@ pub fn init_context() -> Context {
     add_to_context(">", &mut context,Rc::new(gt));
     add_to_context("quote", &mut context,Rc::new(quote));
     add_to_context("list", &mut context,Rc::new(list));
+    add_to_context("car", &mut context,Rc::new(car));
+    add_to_context("cdr", &mut context,Rc::new(cdr));
+    add_to_context("cons", &mut context,Rc::new(cons));
     return context;
 }

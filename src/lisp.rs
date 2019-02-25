@@ -70,20 +70,25 @@ impl Eval for Type {
     }
 }
 
-pub fn eval(input: &String) -> Type {
+pub fn eval_in_context(input: &String, mut context: &mut Context) -> Type {
     if input.is_empty() {
         return Type::List(vec![]); // empty list is nil in scheme
     }
     let res = lexer::parse_fsm(&input);
     let (n, _) = parser::build(&res, 0);
-    let mut context = built_in::init_context();
 
+    // execute all forms and return result from last form
     let len = &n.len();
     let butlast = len - 1;
     for form in &n[..butlast] {
         form.eval(&mut context);
     }
     n.get(len - 1).unwrap().eval(&mut context)
+}
+
+pub fn eval(input: &String) -> Type {
+    let mut context = built_in::init_context();
+    eval_in_context(&input, &mut context)
 }
 
 #[cfg(test)]

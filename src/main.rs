@@ -7,5 +7,8 @@ mod parser;
 mod built_in;
 
 fn main() {
-    println!("result -> {:?}", lisp::eval(&String::from("(+ 1 2)")));
+    let mut context = built_in::init_context();
+    lisp::eval_in_context(&String::from("(def a 1)"), &mut context);
+    let r = lisp::eval_in_context(&String::from("(+ a 3)"), &mut context);
+    println!("{:?}", r);
 }

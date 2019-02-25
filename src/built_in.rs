@@ -33,6 +33,16 @@ fn mult(mut context: &mut Context, args:&[Type]) -> Type {
 }
 
 /**
+ * (quote (a 2 3))
+ * -> (a 2 3)
+ * (quote 1)
+ * -> 1
+ */
+fn quote(_context: &mut Context, args:&[Type]) -> Type {
+    args.get(0).unwrap().clone()
+}
+
+/**
 (def a (+ 1 2 ))
 */
 fn def_special(mut context: &mut Context, args:&[Type]) -> Type {
@@ -157,5 +167,6 @@ pub fn init_context() -> Context {
     add_to_context("fn", &mut context,Rc::new(fn_special));
     add_to_context("if", &mut context,Rc::new(if_special));
     add_to_context(">", &mut context,Rc::new(gt));
+    add_to_context("quote", &mut context,Rc::new(quote));
     return context;
 }

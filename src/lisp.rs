@@ -5,7 +5,7 @@ use std::fmt;
 use std::rc::Rc;
 
 use lexer;
-use builder;
+use parser;
 use built_in;
 
 pub type Function = Fn(&mut Context, &[Type]) -> Type;
@@ -72,7 +72,7 @@ impl Eval for Type {
 
 pub fn eval(input: &String) -> Type {
     let res = lexer::parse_fsm(&input);
-    let (n, _) = builder::build(&res, 0);
+    let (n, _) = parser::build(&res, 0);
     let mut context = built_in::init_context();
     n.eval(&mut context)
 }

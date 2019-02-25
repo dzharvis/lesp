@@ -3,7 +3,7 @@ extern crate core;
 
 mod lexer;
 mod lisp;
-mod builder;
+mod parser;
 mod built_in;
 
 fn main() {

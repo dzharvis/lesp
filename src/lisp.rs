@@ -158,4 +158,12 @@ mod tests {
         assert_eq!(eval(&String::from("(quote 1)")),
                    Type::Number(1));
     }
+
+    #[test]
+    fn test_list() {
+        assert_eq!(eval(&String::from("(list 1 2 3)")),
+                   Type::List(vec![Type::Number(1), Type::Number(2), Type::Number(3)]));
+        assert_eq!(eval(&String::from("(list 1 (+ 1 2))")),
+                   Type::List(vec![Type::Number(1), Type::Number(3)]));
+    }
 }

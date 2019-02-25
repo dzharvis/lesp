@@ -43,6 +43,17 @@ fn quote(_context: &mut Context, args:&[Type]) -> Type {
 }
 
 /**
+ * (list a 2 3)
+ * -> (a 2 3)
+ * (list 1 (+ 0 1))
+ * -> (1 2)
+ */
+fn list(mut context: &mut Context, args:&[Type]) -> Type {
+    let elems = args.into_iter().map(|x| x.eval(&mut context)).collect();
+    Type::List(elems)
+}
+
+/**
 (def a (+ 1 2 ))
 */
 fn def_special(mut context: &mut Context, args:&[Type]) -> Type {
@@ -168,5 +179,6 @@ pub fn init_context() -> Context {
     add_to_context("if", &mut context,Rc::new(if_special));
     add_to_context(">", &mut context,Rc::new(gt));
     add_to_context("quote", &mut context,Rc::new(quote));
+    add_to_context("list", &mut context,Rc::new(list));
     return context;
 }

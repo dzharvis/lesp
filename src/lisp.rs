@@ -57,7 +57,7 @@ impl Eval for Type {
                 return if let Type::Function(_name, f) = symbol  {
                     f(&mut context, &elems[1..])
                 } else {
-                    panic!()
+                    panic!("function expected as first argument")
                 };
             },
             Type::Number(_n) => self.clone(), // evaluates to itself
@@ -71,10 +71,19 @@ impl Eval for Type {
 }
 
 pub fn eval(input: &String) -> Type {
+    if input.is_empty() {
+        return Type::List(vec![]); // empty list is nil in scheme
+    }
     let res = lexer::parse_fsm(&input);
     let (n, _) = parser::build(&res, 0);
     let mut context = built_in::init_context();
-    n.eval(&mut context)
+
+    let len = &n.len();
+    let butlast = len - 1;
+    for form in &n[..butlast] {
+        form.eval(&mut context);
+    }
+    n.get(len - 1).unwrap().eval(&mut context)
 }
 
 #[cfg(test)]
@@ -83,10 +92,15 @@ mod tests {
 
     #[test]
     fn test_simple_forms() {
+        assert_eq!(eval(&String::from("(def a 1) (+ a a)")), Type::Number(2));
+        assert_eq!(eval(&String::from("(def a 10) (def sq (fn sq (a) (* a a))) (sq a)")), Type::Number(100));
+        assert_eq!(eval(&String::from("1")), Type::Number(1));
+        assert_eq!(eval(&String::from("")), Type::List(vec![]));
         assert_eq!(eval(&String::from("(+ 1 2)")), Type::Number(3));
         assert_eq!(eval(&String::from("(* 2 2)")), Type::Number(4));
         assert_eq!(eval(&String::from("(> 4 2)")), Type::Bool(true));
         assert_eq!(eval(&String::from("(- 4 2)")), Type::Number(2));
+        assert_eq!(eval(&String::from("(* 10 20) (- 4 2)")), Type::Number(2));
     }
 
     #[test]
@@ -96,6 +110,7 @@ mod tests {
                                                     (- n 1)\
                                                     (+ (fib (- n 1))\
                                                     (fib (- n 2)))))))\
+                                        (fib 3)\
                                         (fib 8))")),
                    Type::Number(13));
     }
@@ -193,7 +208,9 @@ mod tests {
     fn test_cons() {
         assert_eq!(eval(&String::from("(cons 0 (list 1 (+ 0 2) (+ 1 2)))")),
                    Type::List(vec![Type::Number(0), Type::Number(1), Type::Number(2), Type::Number(3)]));
-        assert_eq!(eval(&String::from("(cons 0 (list 1 (+ 0 2) (+ 1 2)))")),
-                   Type::List(vec![Type::Number(0), Type::Number(1), Type::Number(2), Type::Number(3)]));
+        assert_eq!(eval(&String::from("(cons 0 (list))")),
+                   Type::List(vec![Type::Number(0)]));
+        assert_eq!(eval(&String::from("(cons (quote 0) (list))")),
+                   Type::List(vec![Type::Number(0)]));
     }
 }

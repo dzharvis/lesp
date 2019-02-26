@@ -24,8 +24,8 @@ fn main() {
 fn print(s: &str) {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
-    handle.write(&s.as_bytes());
-    handle.flush();
+    handle.write(&s.as_bytes()).expect("Cannot write to stdout");
+    handle.flush().expect("Cannot write to stdout");
 }
 
 fn init_context_from_file(mut context: &mut lisp::Context) {

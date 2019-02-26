@@ -65,7 +65,7 @@ impl Eval for Type {
             Type::Symbol(name) => {
                 context.get(name).expect(format!("Symbol not found -> {:?}", name).as_str()).clone()
             },
-            Type::Function(_name, _f) => unimplemented!()
+            _ => unimplemented!()
         }
     }
 }

@@ -26,7 +26,7 @@ pub fn parse_fsm(input: &String) -> Vec<Tokens> {
         } else {
             Some(&input[i..i+1])
         };
-        match &current_state.clone() {
+        match &current_state {
             ParsingState::Init => {
                 match current_char {
                     Some(ch) if whitespace.is_match(&ch) => (),
@@ -41,7 +41,7 @@ pub fn parse_fsm(input: &String) -> Vec<Tokens> {
             ParsingState::Number(num) => {
                 match current_char {
                     Some(ch) if !numbers.is_match(&ch) => {
-                        tokens.push(Tokens::Number(num.clone()));
+                        tokens.push(Tokens::Number(*num));
                         current_state = ParsingState::Init;
                     },
                     Some(ch) => {
@@ -50,7 +50,7 @@ pub fn parse_fsm(input: &String) -> Vec<Tokens> {
                         i+=1;
                     },
                     None => {
-                        tokens.push(Tokens::Number(num.clone()));
+                        tokens.push(Tokens::Number(*num));
                         return tokens;
                     }
                 };

@@ -113,7 +113,7 @@ fn let_special(context: &mut Context, args:&[Type]) -> Type {
                     n
                 } else { panic!()};
                 let value= binding.get(1).unwrap().eval(&mut new_context);
-                new_context.insert(name.clone(), value.clone());
+                new_context.insert(name.clone(), value);
             }
         }
     } else { panic!()}
@@ -232,7 +232,7 @@ fn not(mut context: &mut Context, args:& [Type]) -> Type {
 
 // Almost the same as function but evals twice and uses lexical context.
 // Find a way to remove code duplication
-fn macro_scpecial(mut context: &mut Context, args:& [Type]) -> Type {
+fn macro_scpecial(_context: &mut Context, args:& [Type]) -> Type {
     let name = if let Type::Symbol(name) = args.get(0).unwrap() {
         name
     } else { panic!()};

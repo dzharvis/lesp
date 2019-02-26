@@ -63,7 +63,7 @@ impl Eval for Type {
             Type::Number(_n) => self.clone(), // evaluates to itself
             Type::Bool(_b) => self.clone(), // evaluates to itself
             Type::Symbol(name) => {
-                context.get(name).unwrap().clone()
+                context.get(name).expect(format!("Symbol not found -> {:?}", name).as_str()).clone()
             },
             Type::Function(_name, _f) => unimplemented!()
         }
@@ -196,6 +196,8 @@ mod tests {
                    Type::List(vec![Type::Number(1)]));
         assert_eq!(eval(&String::from("(quote 1)")),
                    Type::Number(1));
+        assert_eq!(eval(&String::from("(quote ())")),
+                   Type::List(vec![]));
     }
 
     #[test]

@@ -141,7 +141,7 @@ fn fn_special(context: &mut Context, args:& [Type]) -> Type {
 
     let closure: Rc<Function> = Rc::new(move |mut lexical_context: &mut Context, args:&[Type]| {
         let mut captured_context = captured_context.clone(); // rust forces either mutex or clone for thread safety
-        assert_eq!(args.len(), argument_bindings.len());
+        assert_eq!(args.len(), argument_bindings.len(), "argument size mismatch {:?} -> {:?}", &args, &argument_bindings);
         for i in 0..args.len() {
             let name = if let Type::Symbol(name) = argument_bindings.get(i).unwrap() {
                 name
@@ -230,6 +230,50 @@ fn not(mut context: &mut Context, args:& [Type]) -> Type {
     }
 }
 
+// Almost the same as function but evals twice and uses lexical context.
+// Find a way to remove code duplication
+fn macro_scpecial(mut context: &mut Context, args:& [Type]) -> Type {
+    let name = if let Type::Symbol(name) = args.get(0).unwrap() {
+        name
+    } else { panic!()};
+    let argument_bindings = if let Type::List(names) = args.get(1).unwrap() {
+        names.clone()
+    } else { panic!() };
+    let body = args.get(2).unwrap().clone();
+    let closure_name = name.clone();
+
+    let closure: Rc<Function> = Rc::new(move |mut lexical_context: &mut Context, args:&[Type]| {
+        // let mut captured_context = captured_context.clone(); // rust forces either mutex or clone for thread safety
+        assert_eq!(args.len(), argument_bindings.len(), "argument size mismatch {:?} -> {:?}", &args, &argument_bindings);
+        for i in 0..args.len() {
+            let name = if let Type::Symbol(name) = argument_bindings.get(i).unwrap() {
+                name
+            } else { panic!() };
+            let arg = args.get(i).unwrap().clone(); // don't eval args for macro
+            lexical_context.insert(name.clone(), arg);
+        }
+
+        // TODO find better solution for this hack
+        let cl_name = {
+            if let Some(n) = lexical_context.get(&closure_name) {
+                Some(n.clone())
+            } else {
+                None
+            }
+        };
+        match cl_name {
+            Some(c) => {
+                // force add current closure to captured scope
+                lexical_context.insert(closure_name.clone(), c.clone());
+                ()
+            },
+            None => () //ignore
+        };
+        return body.eval(&mut lexical_context).eval(&mut lexical_context);
+    });
+    Type::Function(name.clone(), closure)
+}
+
 fn add_to_context(name: &str, context: &mut Context, value: Rc<Function>) {
     let name = String::from(name);
     context.insert(name.clone(), Type::Function(name, value));
@@ -254,5 +298,6 @@ pub fn init_context() -> Context {
     add_to_context("and", &mut context,Rc::new(and));
     add_to_context("or", &mut context,Rc::new(or));
     add_to_context("not", &mut context,Rc::new(not));
+    add_to_context("macro", &mut context,Rc::new(macro_scpecial));
     return context;
 }

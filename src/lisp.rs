@@ -98,6 +98,7 @@ mod tests {
     #[test]
     fn test_simple_forms() {
         assert_eq!(eval(&String::from("(def a 1) (+ a a)")), Type::Number(2));
+        assert_eq!(eval(&String::from(" (def a 1) (+ a a) ")), Type::Number(2));
         assert_eq!(eval(&String::from("(def a 10) (def sq (fn sq (a) (* a a))) (sq a)")), Type::Number(100));
         assert_eq!(eval(&String::from("1")), Type::Number(1));
         assert_eq!(eval(&String::from("")), Type::List(vec![]));

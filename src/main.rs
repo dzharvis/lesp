@@ -6,6 +6,7 @@ mod lisp;
 mod parser;
 mod built_in;
 
+use std::fs;
 use std::io::{self, BufRead, Write};
 
 fn main() {
@@ -31,5 +32,7 @@ fn print(s: &str) {
 }
 
 fn init_context_from_file(mut context: &mut lisp::Context) {
-
+    let contents = fs::read_to_string("C:\\Users\\dzharvis\\projects\\lesp\\res\\init.lisp")
+        .expect("Something went wrong reading the file");
+    lisp::eval_in_context(&String::from(contents), &mut context);
 }

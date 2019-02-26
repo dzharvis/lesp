@@ -18,6 +18,7 @@ pub fn parse_fsm(input: &String) -> Vec<Tokens> {
     let mut i = 0;
     let mut tokens = vec![];
     let numbers = Regex::new(r"[0-9]").unwrap();
+    let whitespace = Regex::new(r"[\s\n\r]").unwrap();
     let letters_and_numbers = Regex::new(r"[a-zA-Z0-9]").unwrap();
     loop {
         let current_char = if i >= input.len() {
@@ -28,7 +29,7 @@ pub fn parse_fsm(input: &String) -> Vec<Tokens> {
         match &current_state.clone() {
             ParsingState::Init => {
                 match current_char {
-                    Some(" ") => (),
+                    Some(ch) if whitespace.is_match(&ch) => (),
                     Some("(") => {tokens.push(Tokens::OP);},
                     Some(")") => {tokens.push(Tokens::CP);},
                     Some(ch) if numbers.is_match(&ch) => {current_state = ParsingState::Number(ch.parse::<u32>().unwrap());},

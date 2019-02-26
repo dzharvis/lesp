@@ -110,6 +110,24 @@ mod tests {
     }
 
     #[test]
+    fn test_eq() {
+        assert_eq!(eval(&String::from("(eq 1 1)")), Type::Bool(true));
+        assert_eq!(eval(&String::from("(eq 1 2)")), Type::Bool(false));
+        assert_eq!(eval(&String::from("(eq (list 1 2) (list 1 2))")), Type::Bool(true));
+        assert_eq!(eval(&String::from("(eq (list 1 2) (list 1 2 3))")), Type::Bool(false));
+        assert_eq!(eval(&String::from("(eq (quote 1) 1)")), Type::Bool(true));
+    }
+
+    #[test]
+    fn test_and_or_not() {
+        assert_eq!(eval(&String::from("(and (eq 1 1) (> 2 1))")), Type::Bool(true));
+        assert_eq!(eval(&String::from("(and (eq 1 2) (> 2 1))")), Type::Bool(false));
+        assert_eq!(eval(&String::from("(not (and (eq 1 2) (> 2 1)))")), Type::Bool(true));
+        assert_eq!(eval(&String::from("(not (or (eq 1 2) (> 2 1)))")), Type::Bool(false));
+        assert_eq!(eval(&String::from("(not (or (eq 1 2) (> 2 3)))")), Type::Bool(true));
+    }
+
+    #[test]
     fn test_fibonacci() {
         assert_eq!(eval(&String::from("(let ((fib (fn fib (n) \
                                                 (if (> 3 n)\

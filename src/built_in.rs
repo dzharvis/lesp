@@ -196,6 +196,40 @@ fn gt(mut context: &mut Context, args:& [Type]) -> Type {
     }
 }
 
+fn eq(mut context: &mut Context, args:& [Type]) -> Type {
+    let left = args.get(0).unwrap().eval(&mut context);
+    let right = args.get(1).unwrap().eval(&mut context);
+
+    Type::Bool(left.eq(&right))
+}
+
+fn and(mut context: &mut Context, args:& [Type]) -> Type {
+    let left = args.get(0).unwrap().eval(&mut context);
+    let right = args.get(1).unwrap().eval(&mut context);
+    match (left, right) {
+        (Type::Bool(true), Type::Bool(true)) => Type::Bool(true),
+        (_,_) => Type::Bool(false)
+    }
+}
+
+fn or(mut context: &mut Context, args:& [Type]) -> Type {
+    // no short circuit - i'm too lazy
+    let left = args.get(0).unwrap().eval(&mut context);
+    let right = args.get(1).unwrap().eval(&mut context);
+    match (left, right) {
+        (Type::Bool(left), Type::Bool(right)) => Type::Bool(left || right),
+        (_,_) => Type::Bool(false)
+    }
+}
+
+fn not(mut context: &mut Context, args:& [Type]) -> Type {
+    let arg = args.get(0).unwrap().eval(&mut context);
+    match arg {
+        Type::Bool(arg) => Type::Bool(!arg),
+        _ => panic!()
+    }
+}
+
 fn add_to_context(name: &str, context: &mut Context, value: Rc<Function>) {
     let name = String::from(name);
     context.insert(name.clone(), Type::Function(name, value));
@@ -216,5 +250,9 @@ pub fn init_context() -> Context {
     add_to_context("car", &mut context,Rc::new(car));
     add_to_context("cdr", &mut context,Rc::new(cdr));
     add_to_context("cons", &mut context,Rc::new(cons));
+    add_to_context("eq", &mut context,Rc::new(eq));
+    add_to_context("and", &mut context,Rc::new(and));
+    add_to_context("or", &mut context,Rc::new(or));
+    add_to_context("not", &mut context,Rc::new(not));
     return context;
 }

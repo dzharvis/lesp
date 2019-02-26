@@ -1,6 +1,3 @@
-extern crate regex;
-extern crate core;
-
 mod lexer;
 mod lisp;
 mod parser;

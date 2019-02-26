@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use lisp::{Type, Context, Eval};
+use crate::lisp::{Type, Context, Eval};
 use std::rc::Rc;
-use lisp::Function;
+use crate::lisp::Function;
 
 fn add(mut context: &mut Context, args:&[Type]) -> Type {
     Type::Number(args.into_iter().map(|x| {
@@ -254,14 +254,7 @@ fn macro_scpecial(mut context: &mut Context, args:& [Type]) -> Type {
         }
 
         // TODO find better solution for this hack
-        let cl_name = {
-            if let Some(n) = lexical_context.get(&closure_name) {
-                Some(n.clone())
-            } else {
-                None
-            }
-        };
-        match cl_name {
+        match lexical_context.get(&closure_name) {
             Some(c) => {
                 // force add current closure to captured scope
                 lexical_context.insert(closure_name.clone(), c.clone());

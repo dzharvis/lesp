@@ -4,9 +4,9 @@ use std::fmt::Error;
 use std::fmt;
 use std::rc::Rc;
 
-use lexer;
-use parser;
-use built_in;
+use crate::lexer;
+use crate::parser;
+use crate::built_in;
 
 pub type Function = Fn(&mut Context, &[Type]) -> Type;
 pub type Context = HashMap<String, Type>;

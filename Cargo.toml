@@ -2,6 +2,7 @@
 name = "lesp"
 version = "0.1.0"
 authors = ["dzharvis"]
+edition = "2018"
 
 [dependencies]
 regex = "1.1.0"

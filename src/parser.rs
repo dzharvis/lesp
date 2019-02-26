@@ -1,5 +1,5 @@
-use lexer::{Tokens};
-use lisp::{Type};
+use crate::lexer::{Tokens};
+use crate::lisp::{Type};
 
 pub fn build(tokens:&Vec<Tokens>, i: usize) -> (Vec<Type>, usize) {
     let mut elems:Vec<Type> = vec![];

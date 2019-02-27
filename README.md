@@ -2,6 +2,14 @@
 
 Try it here https://dzharvis.github.io/lesp/
 
+## Building
+### Local console app
+ - `cargo run --no-default-features`
+### Web app
+ - `cargo install cargo-web`
+ - `cargo web start`
+ - Open `http://[::1]:8000` in your browser
+
 ## Usage example
 ```lisp
 >> (reduce (list 1 2 3) 0 +)

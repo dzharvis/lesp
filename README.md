@@ -1,5 +1,7 @@
 # Much worse version of Lisp
 
+Try it here https://dzharvis.github.io/lesp/
+
 ## Usage example
 ```lisp
 >> (reduce (list 1 2 3) 0 +)

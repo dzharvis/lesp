@@ -28,3 +28,5 @@ Try it here https://dzharvis.github.io/lesp/
 ## Notes
  - Empty list works as nil
  - Everything is immutable
+ - Numbers are only positive
+ - No string support

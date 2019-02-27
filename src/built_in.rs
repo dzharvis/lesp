@@ -273,24 +273,32 @@ fn add_to_context(name: &str, context: &mut Context, value: Rc<Function>) {
 }
 
 pub fn init_context() -> Context {
-    let mut context: HashMap<String, Type> = HashMap::new();
-    add_to_context("*", &mut context,Rc::new(mult));
-    add_to_context("+", &mut context,Rc::new(add));
-    add_to_context("-", &mut context,Rc::new(sub));
-    add_to_context("def", &mut context,Rc::new(def_special));
-    add_to_context("let", &mut context,Rc::new(let_special));
-    add_to_context("fn", &mut context,Rc::new(fn_special));
-    add_to_context("if", &mut context,Rc::new(if_special));
-    add_to_context(">", &mut context,Rc::new(gt));
-    add_to_context("quote", &mut context,Rc::new(quote));
-    add_to_context("list", &mut context,Rc::new(list));
-    add_to_context("car", &mut context,Rc::new(car));
-    add_to_context("cdr", &mut context,Rc::new(cdr));
-    add_to_context("cons", &mut context,Rc::new(cons));
-    add_to_context("eq", &mut context,Rc::new(eq));
-    add_to_context("and", &mut context,Rc::new(and));
-    add_to_context("or", &mut context,Rc::new(or));
-    add_to_context("not", &mut context,Rc::new(not));
-    add_to_context("macro", &mut context,Rc::new(macro_scpecial));
-    return context;
+    macro_rules! add {
+        ( $( $n:expr , $f:expr  ),* ) => {{
+            let mut context: HashMap<String, Type> = HashMap::new();
+            $(
+                add_to_context($n, &mut context, Rc::new($f));
+            )*
+            context
+        }};
+    }
+
+    add!["def", def_special,
+         "let", let_special,
+         "fn", fn_special,
+         "if", if_special,
+         "macro", macro_scpecial,
+         "*", mult,
+         "+", add,
+         "-", sub,
+         ">", gt,
+         "quote", quote,
+         "list", list,
+         "car", car,
+         "cdr", cdr,
+         "cons", cons,
+         "eq", eq,
+         "and", and,
+         "or", or,
+         "not", not]
 }

@@ -27,6 +27,11 @@
      (reduce (cdr elems) (f acc (car elems)) f)
      acc))
 
+(defn reduce- (elems f)
+ (if (not-empty elems)
+     (reduce (cdr elems) (car elems) f)
+     acc))
+
 (defn map (elems f)
  (if (not-empty elems)
      (cons (f (car elems)) (map (cdr elems) f))
@@ -34,3 +39,8 @@
 
 (defn reverse (elems)
  (reduce elems (list) (fn _ (acc e) (cons e acc))))
+
+(defn genlist (n)
+ (if (> n 0)
+     (cons n (genlist (- n 1)))
+     (list)))

@@ -5,7 +5,6 @@ mod built_in;
 #[cfg(feature = "web-spa")]
 mod browser;
 
-use std::fs;
 use std::io::{self, BufRead, Write};
 
 #[cfg(feature = "web-spa")]

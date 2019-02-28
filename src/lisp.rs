@@ -3,31 +3,49 @@ use std::fmt::Formatter;
 use std::fmt::Error;
 use std::fmt;
 use std::rc::Rc;
+use core::ops::Deref;
 
 use crate::lexer;
 use crate::parser;
 use crate::built_in;
 
-pub type Function = Fn(&mut Context, &[Type]) -> Type;
-pub type Context = HashMap<String, Type>;
-
-#[derive(Clone)]
-pub enum Type {
-    Symbol(String), Bool(bool), Number(u32), List(Vec<Type>), Function(String, Rc<Function>)
+#[derive(Clone, PartialEq, Debug)]
+pub struct Function {
+    pub is_macro: bool,
+    pub context: Context,
+    pub name: String,
+    pub args: Vec<Type>,
+    pub body: Vec<Type>
 }
 
-impl PartialEq for Type {
-    fn eq(&self, other: &Type) -> bool {
+#[derive(Clone)]
+pub enum FunctionType {
+    Native(String, NativeFunction),
+    UserDefined(Rc<Function>)
+}
+pub type NativeFunction = fn(&mut Context, &[Type]) -> Type;
+pub type Context = HashMap<String, Type>;
+
+#[derive(Clone, PartialEq)]
+pub enum Type {
+    Symbol(String), Bool(bool), Number(u32), List(Vec<Type>), Function(FunctionType)
+}
+
+impl PartialEq for FunctionType {
+    fn eq(&self, other: &FunctionType) -> bool {
         match (self, other) {
-            (Type::Function(name, rc), Type::Function(name_other, rc_other))  => {
-                // should work, probably xD
-                name.eq(name_other) && (rc.as_ref() as *const _ ==  rc_other.as_ref() as *const _)
-            },
-            (Type::List(elems), Type::List(elems_other)) => elems.eq(elems_other),
-            (Type::Number(n), Type::Number(n_other)) => n.eq(n_other),
-            (Type::Symbol(s), Type::Symbol(s_other)) => s.eq(s_other),
-            (Type::Bool(b), Type::Bool(b_other)) => b.eq(b_other),
+            (FunctionType::UserDefined(f), FunctionType::UserDefined(f_other)) => f.eq(f_other),
+            (FunctionType::Native(n, f), FunctionType::Native(n_other, f_other)) => n.eq(n_other) && (f as *const _ == f_other as *const _),
             (_,_) => false
+        }
+    }
+}
+
+impl fmt::Debug for FunctionType {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        match self {
+            FunctionType::Native(name, _) => format!("native({})", name).fmt(f),
+            FunctionType::UserDefined(fun) => fun.name.fmt(f)
         }
     }
 }
@@ -35,30 +53,73 @@ impl PartialEq for Type {
 impl fmt::Debug for Type {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         match self {
-            Type::Function(name, _function) => name.fmt(f),
+            Type::Function(ft) => ft.fmt(f),
             Type::List(elems) => elems.fmt(f),
             Type::Number(n) => n.fmt(f),
             Type::Symbol(s) => s.fmt(f),
             Type::Bool(b) => b.fmt(f)
         }
-
     }
 }
 
-pub trait Eval {
-    fn eval(&self, context: &mut Context) -> Type;
+impl FunctionType {
+    pub fn eval(&self, mut context: &mut Context, args: &[Type]) -> Type {
+        match self {
+            FunctionType::Native(_, f) => {
+                f(&mut context, args)
+            },
+            FunctionType::UserDefined(f_struct) => {
+                let Function {context: captured_context, name: f_name, args: argument_bindings, body, is_macro} = f_struct.deref();
+                let mut current_context = if *is_macro {
+                    context.clone()
+                } else {
+                    captured_context.clone()
+                };
+                assert_eq!(args.len(), argument_bindings.len(), "argument size mismatch {:?} -> {:?}", &args, &argument_bindings);
+                for i in 0..args.len() {
+                    let arg_name = if let Type::Symbol(name) = argument_bindings.get(i).unwrap() {
+                        name
+                    } else { panic!() };
+                    let arg = if *is_macro {
+                        args.get(i).unwrap().clone() //eval function args first with current lexical scope
+                    } else {
+                         args.get(i).unwrap().eval(&mut context) //macro arg should not be avaluated
+                    };
+                    current_context.insert(arg_name.clone(), arg);
+                    current_context.insert(f_name.clone(), Type::Function(self.clone())); //named lambdas
+                }
+
+                let len = &body.len();
+                let butlast = len - 1;
+                // execute all forms and return result from last form
+                // macros doesn't has side effects, thus ignore
+                if !*is_macro {
+                    for form in &body[..butlast] {
+                        form.eval(&mut current_context);
+                    }
+                }
+                
+                let result = body.get(len - 1).unwrap().eval(&mut current_context);
+                if *is_macro {
+                    result.eval(&mut context)
+                } else {
+                    result
+                }
+            }
+        }
+    }
 }
 
-impl Eval for Type {
-    fn eval(&self, mut context: &mut Context) -> Type {
+impl Type {
+    pub fn eval(&self, mut context: &mut Context) -> Type {
         match self {
             Type::List(elems) => {
                 let symbol = elems.get(0).unwrap().eval(&mut context);
-                return if let Type::Function(_name, f) = symbol  {
-                    f(&mut context, &elems[1..])
+                if let Type::Function(f) = symbol  {
+                    f.eval(&mut context, &elems[1..])
                 } else {
                     panic!("function expected as first argument")
-                };
+                }
             },
             Type::Number(_n) => self.clone(), // evaluates to itself
             Type::Bool(_b) => self.clone(), // evaluates to itself
@@ -72,7 +133,7 @@ impl Eval for Type {
 
 pub fn eval_in_context(input: &String, mut context: &mut Context) -> Type {
     if input.is_empty() {
-        return Type::List(vec![]); // empty list is nil in scheme
+        return Type::List(vec![]); // empty list is nil
     }
     let res = lexer::parse_fsm(&input);
     let (n, _) = parser::build(&res, 0);
@@ -100,6 +161,7 @@ mod tests {
         assert_eq!(eval(&String::from("(def a 1) (+ a a)")), Type::Number(2));
         assert_eq!(eval(&String::from(" (def a 1) (+ a a) ")), Type::Number(2));
         assert_eq!(eval(&String::from("(def a 10) (def sq (fn sq (a) (* a a))) (sq a)")), Type::Number(100));
+        assert_eq!(eval(&String::from("((fn sq (a) (* a a)) 10)")), Type::Number(100));
         assert_eq!(eval(&String::from("1")), Type::Number(1));
         assert_eq!(eval(&String::from("")), Type::List(vec![]));
         assert_eq!(eval(&String::from("(+ 1 2)")), Type::Number(3));
@@ -128,6 +190,24 @@ mod tests {
     }
 
     #[test]
+    fn test_named_lambdas() {
+        assert_eq!(eval(&String::from("((fn sum (l) (if (> l 0) (+ l (sum (- l 1))) l)) 3)")),
+                   Type::Number(6));
+    }
+
+    #[test]
+    fn test_macro() {
+        assert_eq!(eval(&String::from("(def add (macro add (a b) (list (quote +) a b)))
+                                       (add 10 20)")),
+                   Type::Number(30));
+        assert_eq!(eval(&String::from("(def defmacro (macro defmacro (name args body) (list (quote def) name (list (quote macro) name args body))))
+                                       (defmacro defn (name args body) (list (quote def) name (list (quote fn) name args body)))
+                                       (defn add (a b) (+ a b))
+                                       (add 10 20)")),
+                   Type::Number(30));
+    }
+
+    #[test]
     fn test_fibonacci() {
         assert_eq!(eval(&String::from("(let ((fib (fn fib (n) \
                                                 (if (> 3 n)\
@@ -144,6 +224,20 @@ mod tests {
         assert_eq!(eval(&String::from("(let ((apply (fn apply (f n) (f (n)))))\
                                         (apply (fn _ (a) (* a a)) (fn _ () 10)))")),
                    Type::Number(100));
+    }
+
+    #[test]
+    fn test_fn_eq() {
+        //TODO fix
+        // doesn't work :(
+        // assert_eq!(eval(&String::from("(eq + +)")),
+        //            Type::Bool(true));
+        assert_eq!(eval(&String::from("(eq + -)")),
+                   Type::Bool(false));
+        assert_eq!(eval(&String::from("(def a (fn a () 1))
+                                       (def b (fn b () 2))
+                                       (list (eq a b) (eq a a) (eq b b))")),
+                   Type::List(vec![Type::Bool(false), Type::Bool(true), Type::Bool(true)]));
     }
 
     #[test]

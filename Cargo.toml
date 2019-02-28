@@ -9,7 +9,7 @@ name = "lesp"
 path = "src/main.rs"
 
 [features]
-default = ["web-spa"]
+default = []
 web-spa = ["yew", "stdweb", "serde_json", "serde_derive", "serde"]
 
 [dependencies]

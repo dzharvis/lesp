@@ -4,10 +4,10 @@ Try it here https://dzharvis.github.io/lesp/
 
 ## Building
 ### Local console app
- - `cargo run --no-default-features`
+ - `cargo run`
 ### Web app
  - `cargo install cargo-web`
- - `cargo web start`
+ - `cargo web start --features web-spa`
  - Open `http://[::1]:8000` in your browser
 
 ## Usage example

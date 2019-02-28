@@ -1,7 +1,6 @@
 use std::collections::HashMap;
-use crate::lisp::{Type, Context, Eval};
 use std::rc::Rc;
-use crate::lisp::Function;
+use crate::lisp::{Type, Context, FunctionType, Function, NativeFunction};
 
 fn add(mut context: &mut Context, args:&[Type]) -> Type {
     Type::Number(args.into_iter().map(|x| {
@@ -124,45 +123,34 @@ fn let_special(context: &mut Context, args:&[Type]) -> Type {
     args.get(args.len() - 1).unwrap().eval(&mut new_context)
 }
 
-/**
-(fn name (a b c)
-    (+ a b c))
-*/
-fn fn_special(context: &mut Context, args:& [Type]) -> Type {
+fn fn_generic(context: &mut Context, args:& [Type], is_macro: bool) -> Type {
     let name = if let Type::Symbol(name) = args.get(0).unwrap() {
-        name
+        name.clone()
     } else { panic!()};
     let argument_bindings = if let Type::List(names) = args.get(1).unwrap() {
         names.clone()
     } else { panic!() };
-    let body = args.get(2).unwrap().clone();
-    let captured_context = context.clone(); // clone because of lifetime inside closure
-    let closure_name = name.clone();
+    let body = args[2..].to_vec();
 
-    let closure: Rc<Function> = Rc::new(move |mut lexical_context: &mut Context, args:&[Type]| {
-        let mut captured_context = captured_context.clone(); // rust forces either mutex or clone for thread safety
-        assert_eq!(args.len(), argument_bindings.len(), "argument size mismatch {:?} -> {:?}", &args, &argument_bindings);
-        for i in 0..args.len() {
-            let name = if let Type::Symbol(name) = argument_bindings.get(i).unwrap() {
-                name
-            } else { panic!() };
-            let arg = args.get(i).unwrap().eval(&mut lexical_context); //eval function args first with current lexical scope
-            captured_context.insert(name.clone(), arg);
-        }
+    Type::Function(FunctionType::UserDefined(Rc::new(Function {
+        context: context.clone(),
+        name: name,
+        args: argument_bindings,
+        body: body,
+        is_macro: is_macro
+    })))
+}
 
-        // TODO find better solution for this hack
-        // hack for named lambdas - get current closure from lexical scope if exists
-        match lexical_context.get(&closure_name) {
-            Some(c) => {
-                // force add current closure to captured scope
-                captured_context.insert(closure_name.clone(), c.clone());
-                ()
-            },
-            None => () //ignore
-        };
-        return body.eval(&mut captured_context); // eval body with enclosed scope
-    });
-    Type::Function(name.clone(), closure)
+/**
+(fn name (a b c)
+    (+ a b c))
+*/
+fn fn_special(mut context: &mut Context, args:& [Type]) -> Type {
+    fn_generic(&mut context, &args, false)
+}
+
+fn macro_scpecial(mut context: &mut Context, args:& [Type]) -> Type {
+    fn_generic(&mut context, &args, true)
 }
 
 /**
@@ -230,46 +218,9 @@ fn not(mut context: &mut Context, args:& [Type]) -> Type {
     }
 }
 
-// Almost the same as function but evals twice and uses lexical context.
-// Find a way to remove code duplication
-fn macro_scpecial(_context: &mut Context, args:& [Type]) -> Type {
-    let name = if let Type::Symbol(name) = args.get(0).unwrap() {
-        name
-    } else { panic!()};
-    let argument_bindings = if let Type::List(names) = args.get(1).unwrap() {
-        names.clone()
-    } else { panic!() };
-    let body = args.get(2).unwrap().clone();
-    let closure_name = name.clone();
-
-    let closure: Rc<Function> = Rc::new(move |mut lexical_context: &mut Context, args:&[Type]| {
-        // let mut captured_context = captured_context.clone(); // rust forces either mutex or clone for thread safety
-        assert_eq!(args.len(), argument_bindings.len(), "argument size mismatch {:?} -> {:?}", &args, &argument_bindings);
-        for i in 0..args.len() {
-            let name = if let Type::Symbol(name) = argument_bindings.get(i).unwrap() {
-                name
-            } else { panic!() };
-            let arg = args.get(i).unwrap().clone(); // don't eval args for macro
-            lexical_context.insert(name.clone(), arg);
-        }
-
-        // TODO find better solution for this hack
-        match lexical_context.get(&closure_name) {
-            Some(c) => {
-                // force add current closure to captured scope
-                lexical_context.insert(closure_name.clone(), c.clone());
-                ()
-            },
-            None => () //ignore
-        };
-        return body.eval(&mut lexical_context).eval(&mut lexical_context);
-    });
-    Type::Function(name.clone(), closure)
-}
-
-fn add_to_context(name: &str, context: &mut Context, value: Rc<Function>) {
+fn add_to_context(name: &str, context: &mut Context, value: NativeFunction) {
     let name = String::from(name);
-    context.insert(name.clone(), Type::Function(name, value));
+    context.insert(name.clone(), Type::Function(FunctionType::Native(name, value)));
 }
 
 pub fn init_context() -> Context {
@@ -277,7 +228,7 @@ pub fn init_context() -> Context {
         ( $( $n:expr , $f:expr  ),* ) => {{
             let mut context: HashMap<String, Type> = HashMap::new();
             $(
-                add_to_context($n, &mut context, Rc::new($f));
+                add_to_context($n, &mut context, $f);
             )*
             context
         }};

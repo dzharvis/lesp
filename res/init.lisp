@@ -2,11 +2,17 @@
  (macro defmacro (name args body)
   (list (quote def) name (list (quote macro) name args body))))
 
-(defmacro defn (name args body)
- (list (quote def) name (list (quote fn) name args body)))
+(defmacro do (body...)
+  (cons (quote let) (cons (list) body)))
 
-(defmacro when (test body)
- (list (quote if) test body (quote (list))))
+(defmacro defn (name args body...)
+ (list (quote def) name (list (quote fn) name args (cons (quote do) body))))
+
+(defmacro when (test body...)
+ (list (quote if) test (cons (quote do) body) (quote (list))))
+
+(defmacro dbg! (args...)
+ (cons (quote do) (map args (fn _ (a) (list (quote dbg) a)))))
 
 (defn square (a)
  (* a a))
@@ -22,23 +28,33 @@
 
 (defn not-empty (l) (not (empty l)))
 
-(defn reduce (elems acc f)
+(defn len (l)
+ (if (empty l)
+     0
+     (+ 1 (len (cdr l)))))
+
+(defn reduce_ (elems acc f)
  (if (not-empty elems)
-     (reduce (cdr elems) (f acc (car elems)) f)
+     (reduce_ (cdr elems) (f acc (car elems)) f)
      acc))
 
-(defn reduce- (elems f)
- (if (not-empty elems)
-     (reduce (cdr elems) (car elems) f)
-     acc))
+(defn first (l) (car l))
+(defn second (l) (car (cdr l)))
+(defn last (l) (car (reverse l)))
+(defn rest (l) (cdr l))
+
+(defn reduce (elems arg...)
+ (if (and (not-empty elems) (eq 1 (len arg)))
+     (reduce_ (rest elems) (first elems) (first arg))
+     (reduce_ elems (first arg) (second arg))))
+
+(defn reverse (elems)
+ (reduce_ elems (list) (fn _ (acc e) (cons e acc))))
 
 (defn map (elems f)
  (if (not-empty elems)
      (cons (f (car elems)) (map (cdr elems) f))
      (list)))
-
-(defn reverse (elems)
- (reduce elems (list) (fn _ (acc e) (cons e acc))))
 
 (defn genlist (n)
  (if (> n 0)

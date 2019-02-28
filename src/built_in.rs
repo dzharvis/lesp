@@ -10,6 +10,13 @@ fn add(mut context: &mut Context, args:&[Type]) -> Type {
     }).fold(0, |acc, x| acc + x))
 }
 
+fn dbg(mut context: &mut Context, args:&[Type]) -> Type {
+    let arg = args.get(0).unwrap();
+    let result = arg.eval(&mut context);
+    println!("{:?} -> {:?}", &arg, &result);
+    result
+}
+
 fn sub(mut context: &mut Context, args:&[Type]) -> Type {
     let first = if let Type::Number(n) = args.get(0).unwrap().eval(&mut context) {
         n
@@ -131,13 +138,38 @@ fn fn_generic(context: &mut Context, args:& [Type], is_macro: bool) -> Type {
         names.clone()
     } else { panic!() };
     let body = args[2..].to_vec();
+    let arglen = argument_bindings.len();
+
+    let is_vararg = arglen > 0 && if let Type::Symbol(name) = argument_bindings.get(arglen - 1).unwrap() {
+        name.ends_with("...")
+    } else {
+        panic!()
+    };
+
+    let vararg = if is_vararg {
+        let vararg_name = if let Type::Symbol(name) = argument_bindings.get(arglen - 1).unwrap() {
+            let len = name.len() - 3; // drop ...
+            name[0..len].to_string()
+        } else { panic!() };
+        Some(Type::Symbol(vararg_name))
+    } else {
+        None
+    };
+
+    let argument_bindings = if is_vararg {
+        let butlast = arglen - 1;
+        argument_bindings[0..butlast].to_vec()
+    } else {
+        argument_bindings
+    };
 
     Type::Function(FunctionType::UserDefined(Rc::new(Function {
         context: context.clone(),
         name: name,
         args: argument_bindings,
         body: body,
-        is_macro: is_macro
+        is_macro: is_macro,
+        vararg: vararg
     })))
 }
 
@@ -247,6 +279,7 @@ pub fn init_context() -> Context {
          "list", list,
          "car", car,
          "cdr", cdr,
+         "dbg", dbg,
          "cons", cons,
          "eq", eq,
          "and", and,

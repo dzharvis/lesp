@@ -15,6 +15,7 @@ pub struct Function {
     pub context: Context,
     pub name: String,
     pub args: Vec<Type>,
+    pub vararg: Option<Type>,
     pub body: Vec<Type>
 }
 
@@ -62,6 +63,7 @@ impl fmt::Debug for Type {
     }
 }
 
+//TODO decouple allowing macroexpand-1
 impl FunctionType {
     pub fn eval(&self, mut context: &mut Context, args: &[Type]) -> Type {
         match self {
@@ -69,36 +71,59 @@ impl FunctionType {
                 f(&mut context, args)
             },
             FunctionType::UserDefined(f_struct) => {
-                let Function {context: captured_context, name: f_name, args: argument_bindings, body, is_macro} = f_struct.deref();
+                let Function {
+                    context: captured_context, 
+                    name: f_name, 
+                    args: argument_bindings, 
+                    body, 
+                    is_macro, 
+                    vararg
+                } = f_struct.deref();
                 let mut current_context = if *is_macro {
                     context.clone()
                 } else {
                     captured_context.clone()
                 };
-                assert_eq!(args.len(), argument_bindings.len(), "argument size mismatch {:?} -> {:?}", &args, &argument_bindings);
-                for i in 0..args.len() {
+                // assert_eq!(args.len(), argument_bindings.len(), "argument size mismatch {:?} -> {:?}", &args, &argument_bindings);
+                for i in 0..argument_bindings.len() {
                     let arg_name = if let Type::Symbol(name) = argument_bindings.get(i).unwrap() {
                         name
                     } else { panic!() };
                     let arg = if *is_macro {
                         args.get(i).unwrap().clone() //eval function args first with current lexical scope
                     } else {
-                         args.get(i).unwrap().eval(&mut context) //macro arg should not be avaluated
+                        args.get(i).unwrap().eval(&mut context) //macro arg should not be avaluated
                     };
                     current_context.insert(arg_name.clone(), arg);
                     current_context.insert(f_name.clone(), Type::Function(self.clone())); //named lambdas
                 }
 
+                match vararg {
+                    Some(Type::Symbol(name)) => {
+                        let from = argument_bindings.len();
+                        let to = args.len();
+                        let varargs = if *is_macro {
+                            args[from..to].to_vec()
+                        } else {
+                            args[from..to].into_iter().map(|a| a.eval(&mut context)).collect()
+                        };
+                        current_context.insert(name.clone(), Type::List(varargs));
+                    },
+                    None => (),
+                    _ => unreachable!()
+                }
+
+                
                 let len = &body.len();
                 let butlast = len - 1;
                 // execute all forms and return result from last form
-                // macros doesn't has side effects, thus ignore
-                if !*is_macro {
-                    for form in &body[..butlast] {
-                        form.eval(&mut current_context);
+                for form in &body[..butlast] {
+                    let result = form.eval(&mut current_context);
+                    if *is_macro {
+                        result.eval(&mut context);
                     }
                 }
-                
+
                 let result = body.get(len - 1).unwrap().eval(&mut current_context);
                 if *is_macro {
                     result.eval(&mut context)
@@ -169,6 +194,14 @@ mod tests {
         assert_eq!(eval(&String::from("(> 4 2)")), Type::Bool(true));
         assert_eq!(eval(&String::from("(- 4 2)")), Type::Number(2));
         assert_eq!(eval(&String::from("(* 10 20) (- 4 2)")), Type::Number(2));
+    }
+
+    #[test]
+    fn test_vararg() {
+        assert_eq!(eval(&String::from("((fn a (c...) c))")), Type::List(vec![]));
+        assert_eq!(eval(&String::from("((fn a (b c...) b) 1 2 3)")), Type::Number(1));
+        assert_eq!(eval(&String::from("((fn a (b c...) c) 1 2 3)")), Type::List(vec![Type::Number(2), Type::Number(3)]));
+        assert_eq!(eval(&String::from("((fn a (c...) c) 1 2 3)")), Type::List(vec![Type::Number(1), Type::Number(2), Type::Number(3)]));
     }
 
     #[test]

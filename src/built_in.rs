@@ -71,6 +71,15 @@ fn cons(mut context: &mut Context, args:&[Type]) -> Type {
     } else { panic!() }
 }
 
+fn push(mut context: &mut Context, args:&[Type]) -> Type {
+    let first = args.get(0).unwrap().eval(&mut context);
+    if let Type::List(elems) = args.get(1).unwrap().eval(&mut context) {
+        let mut new_list = elems.clone();
+        new_list.push(first);
+        Type::List(new_list)
+    } else { panic!() }
+}
+
 /**
  * (quote (a 2 3))
  * -> (a 2 3)
@@ -279,6 +288,7 @@ pub fn init_context() -> Context {
          "list", list,
          "car", car,
          "cdr", cdr,
+         "push", push,
          "dbg", dbg,
          "cons", cons,
          "eq", eq,

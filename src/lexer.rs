@@ -19,7 +19,7 @@ pub fn parse_fsm(input: &String) -> Vec<Tokens> {
     let mut tokens = vec![];
     let numbers = Regex::new(r"[0-9]").unwrap();
     let whitespace = Regex::new(r"[\s\n\r]").unwrap();
-    let letters_and_numbers = Regex::new(r"[-_a-zA-Z0-9.!]").unwrap();
+    let letters_and_numbers = Regex::new(r"[-_a-zA-Z0-9.!>]").unwrap();
     loop {
         let current_char = if i >= input.len() {
             None

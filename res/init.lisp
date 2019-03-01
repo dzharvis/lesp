@@ -60,3 +60,16 @@
  (if (> n 0)
      (cons n (genlist (- n 1)))
      (list)))
+     
+(defmacro ->> (forms...)
+ (reduce forms (fn _ (acc form) (push acc form))))
+
+(defmacro -> (forms...)
+ (reduce forms
+  (fn _ (acc form)
+   (let ((fun (first form))
+         (args (rest form)))
+        (->> args
+         (cons acc)
+         (cons fun))))))
+        

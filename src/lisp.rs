@@ -366,4 +366,10 @@ mod tests {
         assert_eq!(eval(&String::from("(cons (quote 0) (list))")),
                    Type::List(vec![Type::Number(0)]));
     }
+
+    #[test]
+    fn test_push() {
+        assert_eq!(eval(&String::from("(push 1 (list 1 2 3))")),
+                   Type::List(vec![Type::Number(1), Type::Number(2), Type::Number(3), Type::Number(1),]));
+    }
 }

@@ -47,7 +47,7 @@ impl Renderable<Context, RootModel> for RootModel {
                       io(i.clone())
                  })}
                 </pre>
-                <pre>{">> "}<input type={"text"}, placeholder={"(map (list 1 2 3) (fn _ (a) (* a a)))"}, onchange=|e| match e {
+                <pre>{">> "}<input type={"text"}, placeholder={"(-> (genlist 10) (map (fn _ (a) (* a a))))"}, onchange=|e| match e {
                     ChangeData::Value(se) => RootMsg::Eval(se),
                     _ => unreachable!(),
                  }, /></pre>

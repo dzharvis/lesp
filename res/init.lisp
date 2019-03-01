@@ -40,7 +40,6 @@
 
 (defn first (l) (car l))
 (defn second (l) (car (cdr l)))
-(defn last (l) (car (reverse l)))
 (defn rest (l) (cdr l))
 
 (defn reduce (elems arg...)
@@ -50,6 +49,8 @@
 
 (defn reverse (elems)
  (reduce_ elems (list) (fn _ (acc e) (cons e acc))))
+
+(defn last (l) (car (reverse l)))
 
 (defn map (elems f)
  (if (not-empty elems)

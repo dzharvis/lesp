@@ -181,6 +181,14 @@ pub fn eval(input: &String) -> Type {
 mod tests {
     use super::*;
 
+    pub fn bootstrap_and_eval(input: &String) -> Type {
+        let mut context = built_in::init_context();
+        let bytes = include_bytes!("../res/init.lisp");
+        let init_str = String::from_utf8_lossy(bytes).to_string();
+        eval_in_context(&init_str, &mut context);
+        eval_in_context(&input, &mut context)
+    }
+
     #[test]
     fn test_simple_forms() {
         assert_eq!(eval(&String::from("(def a 1) (+ a a)")), Type::Number(2));
@@ -372,4 +380,19 @@ mod tests {
         assert_eq!(eval(&String::from("(push 1 (list 1 2 3))")),
                    Type::List(vec![Type::Number(1), Type::Number(2), Type::Number(3), Type::Number(1),]));
     }
+
+    #[test]
+    fn integration_1() {
+        assert_eq!(bootstrap_and_eval(&String::from("(-> 10 (genlist) (map square) (map square))")),
+                   Type::List(vec![Type::Number(10000), Type::Number(6561), Type::Number(4096), Type::Number(2401), 
+                                   Type::Number(1296), Type::Number(625), Type::Number(256), Type::Number(81),
+                                   Type::Number(16), Type::Number(1)]));
+    }
+
+    #[test]
+    fn integration_2() {
+        assert_eq!(bootstrap_and_eval(&String::from("(-> (list 1 2 3) (reverse))")),
+                   Type::List(vec![Type::Number(3), Type::Number(2), Type::Number(1)]));
+    }
 }
+

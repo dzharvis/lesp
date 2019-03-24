@@ -79,6 +79,7 @@ impl FunctionType {
                     is_macro, 
                     vararg
                 } = f_struct.deref();
+                // TODO speed up clone
                 let mut current_context = if *is_macro {
                     context.clone()
                 } else {
@@ -113,26 +114,23 @@ impl FunctionType {
                     _ => unreachable!()
                 }
 
-                
-                let len = &body.len();
-                let butlast = len - 1;
-                // execute all forms and return result from last form
-                for form in &body[..butlast] {
-                    let result = form.eval(&mut current_context);
-                    if *is_macro {
-                        result.eval(&mut context);
-                    }
-                }
-
-                let result = body.get(len - 1).unwrap().eval(&mut current_context);
+                let result = eval_forms(&body, &mut current_context);
                 if *is_macro {
-                    result.eval(&mut context)
+                    eval_forms(&result, &mut context)
                 } else {
                     result
-                }
+                }.last().unwrap().clone()
             }
         }
     }
+}
+
+fn eval_forms(forms: &[Type], mut ctx: &mut Context) -> Vec<Type> {
+    let mut result = vec![];
+    for form in &forms[..] {
+        result.push(form.eval(&mut ctx));
+    }
+    result
 }
 
 impl Type {
@@ -239,8 +237,9 @@ mod tests {
     #[test]
     fn test_macro() {
         assert_eq!(eval(&String::from("(def add (macro add (a b) (list (quote +) a b)))
-                                       (add 10 20)")),
-                   Type::Number(30));
+                                       (add 10 20)
+                                       (add 10 30)")),
+                   Type::Number(40));
         assert_eq!(eval(&String::from("(def defmacro (macro defmacro (name args body) (list (quote def) name (list (quote macro) name args body))))
                                        (defmacro defn (name args body) (list (quote def) name (list (quote fn) name args body)))
                                        (defn add (a b) (+ a b))
@@ -269,7 +268,7 @@ mod tests {
 
     #[test]
     fn test_fn_eq() {
-        //TODO fix
+        // TODO fix
         // doesn't work :(
         // assert_eq!(eval(&String::from("(eq + +)")),
         //            Type::Bool(true));

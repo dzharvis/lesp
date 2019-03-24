@@ -10,6 +10,21 @@ fn add(mut context: &mut Context, args:&[Type]) -> Type {
     }).fold(0, |acc, x| acc + x))
 }
 
+fn is_list(_context: &mut Context, args:&[Type]) -> Type {
+    if let Type::List(_l) = args.get(0).unwrap() {
+        Type::Bool(true)
+    } else {
+        Type::Bool(false)
+    }
+}
+
+fn prn(mut context: &mut Context, args:&[Type]) -> Type {
+    let arg = args.get(0).unwrap();
+    let result = arg.eval(&mut context);
+    println!("{:?}", &result);
+    result
+}
+
 fn dbg(mut context: &mut Context, args:&[Type]) -> Type {
     let arg = args.get(0).unwrap();
     let result = arg.eval(&mut context);
@@ -68,6 +83,14 @@ fn cons(mut context: &mut Context, args:&[Type]) -> Type {
         let mut new_list = vec![first];
         new_list.extend(elems);
         Type::List(new_list)
+    } else { panic!() }
+}
+
+fn apply(mut context: &mut Context, args:&[Type]) -> Type {
+    if let Type::List(elems) = args.get(1).unwrap().eval(&mut context) {
+        if let Type::Function(f) = args.get(0).unwrap().eval(&mut context) {
+            f.eval(&mut context, &elems[..])
+        } else { panic!() }
     } else { panic!() }
 }
 
@@ -290,7 +313,10 @@ pub fn init_context() -> Context {
          "cdr", cdr,
          "push", push,
          "dbg", dbg,
+         "prn", prn,
+         "is-list", is_list,
          "cons", cons,
+         "apply", apply,
          "eq", eq,
          "and", and,
          "or", or,

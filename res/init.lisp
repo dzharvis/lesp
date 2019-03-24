@@ -41,6 +41,7 @@
 (defn first (l) (car l))
 (defn second (l) (car (cdr l)))
 (defn rest (l) (cdr l))
+(defn rrest (l) (rest (rest l)))
 
 (defn reduce (elems arg...)
  (if (and (not-empty elems) (eq 1 (len arg)))
@@ -73,4 +74,12 @@
         (->> args
          (cons acc)
          (cons fun))))))
-        
+
+(defmacro cond (forms...)
+ (if (empty forms)
+  (quote (list))
+  (let ((test (first forms))
+        (arm  (second forms)))
+      (list (quote if) test 
+                       arm 
+                       (list (quote apply) (quote cond) (list (quote quote) (rrest forms)))))))

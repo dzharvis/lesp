@@ -2,6 +2,8 @@
 
 Try it here https://dzharvis.github.io/lesp/
 
+Note: Due to some bug with web assembly, may not work with some versions of chrome
+
 ## Building
 ### Local console app
  - `cargo run`

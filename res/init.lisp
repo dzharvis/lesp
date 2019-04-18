@@ -2,6 +2,11 @@
  (macro defmacro (name args body)
   (list (quote def) name (list (quote macro) name args body))))
 
+(def nil (list))
+
+(defmacro comment (forms...)
+ (quote nil))
+
 (defmacro do (body...)
   (cons (quote let) (cons (list) body)))
 

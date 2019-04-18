@@ -10,8 +10,8 @@ fn add(mut context: &mut Context, args:&[Type]) -> Type {
     }).fold(0, |acc, x| acc + x))
 }
 
-fn is_list(_context: &mut Context, args:&[Type]) -> Type {
-    if let Type::List(_l) = args.get(0).unwrap() {
+fn is_list(mut context: &mut Context, args:&[Type]) -> Type {
+    if let Type::List(_l) = args.get(0).unwrap().eval(&mut context) {
         Type::Bool(true)
     } else {
         Type::Bool(false)

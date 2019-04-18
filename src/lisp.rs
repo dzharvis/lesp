@@ -141,7 +141,7 @@ impl Type {
                 if let Type::Function(f) = symbol  {
                     f.eval(&mut context, &elems[1..])
                 } else {
-                    panic!("function expected as first argument")
+                    panic!("function expected as first argument {:?}", symbol)
                 }
             },
             Type::Number(_n) => self.clone(), // evaluates to itself

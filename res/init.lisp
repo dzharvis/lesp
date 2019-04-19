@@ -88,3 +88,14 @@
       (list (quote if) test 
                        arm 
                        (list (quote apply) (quote cond) (list (quote quote) (rrest forms)))))))
+
+(defmacro qq (form)
+ (if (is-list form)
+  (let ((f (first form)))
+    (if (eq f (quote unq))
+     (cons (quote list) (rest form))
+     (reduce form (list (quote list)) (fn _ (acc e)
+                                       (if (is-list e)
+                                        (push (list (quote qq) e) acc)
+                                        (push (list (quote quote) e) acc))))))
+  (list (quote quote) form)))

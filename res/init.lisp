@@ -89,6 +89,9 @@
                        arm 
                        (list (quote apply) (quote cond) (list (quote quote) (rrest forms)))))))
 
+(defn concat (elems...)
+ (reduce elems (fn _ (acc e) (reduce e acc (fn _ (acc_ e_) (push e_ acc_))))))
+
 (defn qq-body (form)
  (if (is-list form)
   (let ((f (first form)))

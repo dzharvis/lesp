@@ -89,19 +89,25 @@
                        arm 
                        (list (quote apply) (quote cond) (list (quote quote) (rrest forms)))))))
 
-(defn concat (elems...)
+(defn concat_ (elems)
  (reduce elems (fn _ (acc e) (reduce e acc (fn _ (acc_ e_) (push e_ acc_))))))
+
+(defn concat (elems...)
+ (concat_ elems))
 
 (defn qq-body (form)
  (if (is-list form)
   (let ((f (first form)))
-    (if (eq f (quote unq))
-     (second form)
-     (reduce form (list (quote list)) (fn _ (acc e)
-                                       (if (is-list e)
-                                        (push (qq-body e) acc)
-                                        (push e acc))))))
-  (list (quote quote) form)))
+    (cond 
+     (eq f (quote unq))  (list (second form))
+     (eq f (quote unqs)) (second form)
+     true (reduce form (list (list (quote list))) (fn _ (acc e)
+                                                   (if (is-list e)
+                                                    (push (qq-body e) acc)
+                                                    (push (list e) acc))))))
+  (list (list (quote quote) form))))
+
+(defn noop (arg) arg)
 
 (defmacro qq (form)
- (qq-body form))
+ (dbg! (concat_ (dbg! (qq-body form)))))
